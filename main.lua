@@ -1,23 +1,33 @@
 Actor = require 'entities.actor'
 A = require 'actions'
 BAi = require 'entities.bossAi'
-
+G = require 'game'
+W = require 'world'
 
 
 
 function love.load()
-  Player = Actor:new(10, 3)
-  Boss = Actor:new(100, 2)
+  ActionQueue = {}
+  ActionQueue.q = {}
+  Game = G:new()
+  World = W:new()
+
+  Player = Actor:new(10, 3, 1)
+  Boss = Actor:new(100, 2, 10)
   BossAi = BAi:new(Boss, function(actor)
 
-    if World.turn % 10 == 0 then
-      table.insert(World.events,
-        { turn = World.turn, v = "BossAttack" }
-      )
-      A.attackAtoA(actor, Player)
+    if actor:isReady() then
+      actor:act(function()
+        table.insert(World.events,
+          { turn = World.turn, v = "BossAttack" }
+        )
+        A.attackAtoA(actor, Player)
+      end)
     end
 
-    if actor.hp < 60 then
+
+    if actor.hp < 60 and actor.attack ~= 5 then
+
       table.insert(World.events,
         { turn = World.turn, v = "Boss Rage" }
       )
@@ -25,8 +35,6 @@ function love.load()
     end
   end)
 
-  Game = require 'game'
-  World = require 'world'
 
   table.insert(World.events,
     { turn = World.turn, v = "Init" }
@@ -34,12 +42,30 @@ function love.load()
 
   World.nextTurn = function()
     World.turn = World.turn + 1
+    Boss.atb = Boss.atb + 1
+    Player.atb = Player.atb + 1
 
     -- table.insert(World.events,
     --   { turn = World.turn, v = "NextTurn" }
     -- )
 
     BossAi:activate()
+
+    if Player:isReady() then
+      local action = table.remove(ActionQueue.q, 1)
+      if (action == 'a') then
+        Player:act(function()
+          table.insert(World.events, { turn = World.turn, v = "Player attack" })
+          A.attackAtoA(Player, Boss)
+        end)
+      end
+      if (action == 'h') then
+        Player:act(function()
+          table.insert(World.events, { turn = World.turn, v = "Player heal" })
+          A.healAtoA(Player, Player)
+        end)
+      end
+    end
 
     if Boss.hp <= 0 then
       Game.over = true
@@ -53,9 +79,16 @@ function love.load()
 
   World.nextTurn()
 
+  Timer = { timer = 0, rate = 1 }
+
 end
 
 function love.update(dt)
+  Timer.timer = Timer.timer + dt
+  if Timer.timer > Timer.rate then
+    World.nextTurn()
+    Timer.timer = 0
+  end
 end
 
 function love.draw()
@@ -65,12 +98,14 @@ function love.draw()
   table.insert(output, 'Player')
   table.insert(output, 'hp: ' .. Player.hp)
   table.insert(output, 'a: ' .. Player.attack)
+  table.insert(output, 'atb: ' .. Player.atb)
 
   table.insert(output, '')
 
   table.insert(output, 'Boss')
   table.insert(output, 'hp: ' .. Boss.hp)
   table.insert(output, 'a: ' .. Boss.attack)
+  table.insert(output, 'atb: ' .. Boss.atb)
 
   if Game.over then
     table.insert(output, '')
@@ -93,9 +128,9 @@ function love.draw()
   love.graphics.rectangle('fill', 15, 0, 10 * Player.hp, 10)
   love.graphics.setColor(255, 255, 255) -- reset colours
 
-  love.graphics.rectangle('fill', 15, 150, Boss.maxHp, 12)
+  love.graphics.rectangle('fill', 15, 180, Boss.maxHp, 12)
   love.graphics.setColor(0, 255, 0) -- reset colours
-  love.graphics.rectangle('fill', 15, 150, Boss.hp / Boss.maxHp * 100, 10)
+  love.graphics.rectangle('fill', 15, 180, Boss.hp / Boss.maxHp * 100, 10)
   love.graphics.setColor(255, 255, 255) -- reset colours
 
   love.graphics.setFont(love.graphics.newFont(30))
@@ -126,15 +161,13 @@ function love.keypressed(key)
   end
 
   if key == 'a' then
-    table.insert(World.events, { turn = World.turn, v = "Player attack" })
-    A.attackAtoA(Player, Boss)
-    World.nextTurn()
+    table.insert(World.events, { turn = World.turn, v = "q a" })
+    table.insert(ActionQueue.q, "a")
   end
 
   if key == 'h' then
-    table.insert(World.events, { turn = World.turn, v = "Player heal" })
-    A.healAtoA(Player, Player)
-    World.nextTurn()
+    table.insert(World.events, { turn = World.turn, v = "q h" })
+    table.insert(ActionQueue.q, "h")
   end
 
 

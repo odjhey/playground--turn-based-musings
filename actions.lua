@@ -5,7 +5,7 @@ function M.attackAtoA(src, target)
 end
 
 function M.healAtoA(src, target)
-  target:receive(1)
+  target:receive(-1)
 end
 
 return M
