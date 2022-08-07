@@ -1,22 +1,33 @@
+Actor = require 'entities.actor'
+A = require 'actions'
+BAi = require 'entities.bossAi'
+
+
+
+
 function love.load()
-  Player = {}
-  Boss = {}
+  Player = Actor:new(10, 3)
+  Boss = Actor:new(100, 2)
+  BossAi = BAi:new(Boss, function(actor)
 
-  Player.maxHp = 10
-  Player.hp = 10
-  Player.attack = 3
+    if World.turn % 10 == 0 then
+      table.insert(World.events,
+        { turn = World.turn, v = "BossAttack" }
+      )
+      A.attackAtoA(actor, Player)
+    end
 
-  Boss.hp = 100
-  Boss.maxHp = 100
-  Boss.attack = 2
+    if actor.hp < 60 then
+      table.insert(World.events,
+        { turn = World.turn, v = "Boss Rage" }
+      )
+      actor.attack = 5
+    end
+  end)
 
-  Game = {}
-  Game.over = false
-  Game.keyChain = {}
+  Game = require 'game'
+  World = require 'world'
 
-  World = {}
-  World.events = {}
-  World.turn = 0
   table.insert(World.events,
     { turn = World.turn, v = "Init" }
   )
@@ -28,25 +39,19 @@ function love.load()
     --   { turn = World.turn, v = "NextTurn" }
     -- )
 
-    if World.turn % 10 == 0 then
-      table.insert(World.events,
-        { turn = World.turn, v = "BossAttack" }
-      )
-      Player.hp = Player.hp - Boss.attack
-    end
+    BossAi:activate()
 
-    if Boss.hp < 0 then
+    if Boss.hp <= 0 then
       Game.over = true
     end
 
-    if Player.hp < 0 then
+    if Player.hp <= 0 then
       Game.over = true
     end
 
   end
 
   World.nextTurn()
-
 
 end
 
@@ -122,13 +127,13 @@ function love.keypressed(key)
 
   if key == 'a' then
     table.insert(World.events, { turn = World.turn, v = "Player attack" })
-    Boss.hp = Boss.hp - Player.attack
+    A.attackAtoA(Player, Boss)
     World.nextTurn()
   end
 
   if key == 'h' then
     table.insert(World.events, { turn = World.turn, v = "Player heal" })
-    Player.hp = Player.hp + 1
+    A.healAtoA(Player, Player)
     World.nextTurn()
   end
 
