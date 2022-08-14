@@ -1,14 +1,16 @@
-issue commands, but delayed response
+## Notes
 
-tank - can retreat in 3turns
-tank in front decreases damage taken by those behind
+- issue commands, but delayed response (stacking? or accumulated actions?)
 
-try with a standard attack pattern of an enemy
+- tank - can retreat in 3turns (actions that has more than 1 turn counts to execute)
+- tank in front decreases damage taken by those behind (spatial aware damage computations)
 
-assign units to correct enemies
+- try with a standard attack pattern of an enemy
 
-1 move corresponds to 3 ticks?
+- assign units to correct enemies (classic rock paper scissors)
 
-consumable resource management
-10-15mins game session
-replayable (preview sense) save files
+- 1 move corresponds to 3 ticks? (see above re turn counts, or this may mean micro attacks could be triggered for each tick, like "phases" in table top games)
+
+- consumable resource management
+- 10-15mins game session
+- replayable (preview sense) save files
